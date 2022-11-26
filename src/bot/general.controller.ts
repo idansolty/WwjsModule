@@ -22,6 +22,12 @@ export class GeneralController extends BotController {
     message.reply("Pong", message.author || message.from)
   }
 
+  @BotAuth(POSSIBLE_AUTHS.FROM_ME)
+  @BotCommand("!debug")
+  debugFunction(message) {
+    console.log("debugging");
+  }
+
   @BotAuth(POSSIBLE_AUTHS.NOT_GROUP)
   @BotCommand("hello there!")
   starWars(message) {

@@ -2,6 +2,7 @@ import { IServer } from '../common/interfaces/IServer.interface';
 import { ICommandDefinition } from '../common/interfaces/CommandDefinition.interface';
 import { Client, Message, LocalAuth, Chat, GroupChat } from 'whatsapp-web.js';
 import * as qrcode from "qrcode-terminal"
+import { BotController } from '../common/interfaces/BotController';
 
 export class WhatsappBot implements IServer {
     private bot: Client;
@@ -10,6 +11,10 @@ export class WhatsappBot implements IServer {
 
     constructor() {
         this.bot = new Client({});
+    }
+
+    get getClient() {
+        return this.bot;
     }
 
     public start(): void {
@@ -23,31 +28,7 @@ export class WhatsappBot implements IServer {
 
         WhatsappBot.controllers.forEach((controller) => {
             this.bot.on(controller.prefix, (...args) => controller.target.prototype.dispachAction(controller, ...args));
-        })
-        // this.bot.on('message', (message: Message) => { this.dispachAction(message, this.bot); });
-    }
-
-    private dispachAction(action: string, message: Message, bot: Client): void {
-        let messageContent: string = message.body.trim();
-
-        const controller = WhatsappBot.controllers.find(controller => action.startsWith(controller.prefix));
-
-        if (!controller) {
-            return;
-        }
-
-        messageContent = messageContent.substring(controller.prefix.length, messageContent.length).trim();
-        const command: ICommandDefinition = controller.commands.find((command: any) =>
-            messageContent.startsWith(command.command));
-
-        if (!command) {
-            return;
-        }
-
-        const additionalParameter = messageContent.substring(command.command.length, messageContent.length).trim();
-
-        console.log(`Dispatching ${command.methodName}`)
-        controller.instance[command.methodName](message, bot, additionalParameter);
+        });
     }
 
     getChatWithTimeout(chat: string, timeout: number = 30000): Promise<any> {

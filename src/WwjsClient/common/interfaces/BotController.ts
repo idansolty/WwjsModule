@@ -7,7 +7,7 @@ export class BotController {
     private blackList;
 
     constructor(
-        private readonly whatsappBot: WhatsappBot
+        public readonly whatsappBot: WhatsappBot
     ) { }
 
     public async dispachAction(controller, ...args) {
