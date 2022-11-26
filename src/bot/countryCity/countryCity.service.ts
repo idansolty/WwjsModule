@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Chat, GroupChat } from 'whatsapp-web.js';
 
 @Injectable()
 export class CountryCityService {
@@ -10,7 +11,7 @@ export class CountryCityService {
         return this.onlineGames;
     }
 
-    public async countryCity(groupName, chat) {
+    public async countryCity(groupName: string, chat: GroupChat) {
         this.onlineGames.push({ id: groupName });
 
         const choosenChat = chat;
@@ -25,6 +26,7 @@ export class CountryCityService {
 
             const message = `${type} שמתחיל באות ${letter}`;
 
+            // TODO : fix this info things
             // this.setNextTimeInfo(groupName, randomTime);
             // setNextMessageInfo(groupName, message);
 
@@ -39,6 +41,7 @@ export class CountryCityService {
 
             await choosenChat.setMessagesAdminsOnly(false);
 
+            // TODO : also fix this history problem
             // this.pushHistoryInfo(groupName, object.nextMessage);
 
             if (await this.waitTillEnd(new Date(new Date().getTime() + this.ONE_HOUR_MILISECONDS), groupName)) {

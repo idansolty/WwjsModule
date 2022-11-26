@@ -5,7 +5,7 @@ import { BotCommand } from 'src/WwjsClient/common/decorators/command.decorator';
 import { BotListner } from 'src/WwjsClient/common/decorators/controller.decorator';
 import { BotController } from 'src/WwjsClient/common/interfaces/BotController';
 import { WhatsappBot } from 'src/WwjsClient/proxy/server';
-import { Chat, ChatTypes, Events, Message } from 'whatsapp-web.js';
+import { Chat, ChatTypes, Events, GroupChat, Message } from 'whatsapp-web.js';
 import { CountryCityService } from './countryCity.service';
 
 
@@ -32,8 +32,10 @@ export class CountryCityController extends BotController {
                     this.whatsappBot.getClient.getChats().then(resolve);
                 })
 
+                const chatForGame: GroupChat = chats.find((chat) => chat.name === groupName) as GroupChat;
+
                 message.reply(`מתחיל לשחק ארץ עיר בקבוצה: \n ${groupName}`);
-                this.countryCityService.countryCity(groupName, chats.find((chat) => chat.name === groupName));
+                this.countryCityService.countryCity(groupName, chatForGame);
             } catch (e) {
                 message.reply(`לא הצליח לשלוף צאטים :() \n ${JSON.stringify(e)}`);
                 return;
