@@ -1,0 +1,7 @@
+export enum POSSIBLE_AUTHS {
+    CHAT_WHITE_LIST,
+    CHAT_BLACK_LIST,
+    FROM_ME,
+    GROUP_ADMIN,
+    NOT_GROUP
+}
