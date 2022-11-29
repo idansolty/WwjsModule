@@ -28,7 +28,7 @@ export class GeneralController extends BotController {
     console.log("debugging");
   }
 
-  @BotAuth(POSSIBLE_AUTHS.NOT_GROUP)
+  @BotAuth(POSSIBLE_AUTHS.GROUP_ADMIN)
   @BotCommand("hello there!")
   starWars(message) {
     message.reply("General Kenobi!", message.from)

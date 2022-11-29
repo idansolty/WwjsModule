@@ -1,18 +1,28 @@
 import { Injectable } from '@nestjs/common';
-import { Chat, GroupChat } from 'whatsapp-web.js';
+import { WwjsLogger } from 'src/Logger/logger.service';
+import { Chat, GroupChat, GroupParticipant, Message } from 'whatsapp-web.js';
+import { UserHandlerService } from './handlers/users.handler';
+import { Game, GameHistory } from './types/games.types';
 
 @Injectable()
 export class CountryCityService {
-    private types = ["עיר", "מדינה", "חי", "צומח", "דומם", "שם של בן", "שם של בת", "מקצוע"];
+    private readonly types = ["עיר", "מדינה", "חי", "צומח", "דומם", "שם של בן", "שם של בת", "מקצוע"];
     private readonly ONE_HOUR_MILISECONDS = 1000 * 60 * 60;
-    private onlineGames = []
+    private onlineGames: Game[];
+
+    constructor(
+        private readonly userHandlerService: UserHandlerService,
+        private readonly Logger: WwjsLogger
+    ) {
+        this.onlineGames = [];
+    }
 
     public getOnlineGames() {
         return this.onlineGames;
     }
 
     public async countryCity(groupName: string, chat: GroupChat) {
-        this.onlineGames.push({ id: groupName });
+        this.onlineGames.push({ id: groupName, round: 0 });
 
         const choosenChat = chat;
 
@@ -20,29 +30,20 @@ export class CountryCityService {
 
         console.log("started countryCity!");
         while (true) {
-            const letter = this.randomHebrewLetter();
-
-            const type = this.types[this.randomNumber(0, this.types.length)]
-
-            const message = `${type} שמתחיל באות ${letter}`;
-
-            // TODO : fix this info things
-            // this.setNextTimeInfo(groupName, randomTime);
-            // setNextMessageInfo(groupName, message);
+            this.generateNextGame(groupName, randomTime);
 
             console.log(`waiting for time : ${randomTime.toLocaleDateString()} ${randomTime.toLocaleTimeString()}`)
             if (await this.waitTillStart(randomTime, groupName)) {
                 return;
             }
 
-            const object = this.onlineGames.find(group => group.id === groupName);
+            const thisOnlineGame = this.onlineGames.find(group => group.id === groupName);
 
-            const sentMessage = await choosenChat.sendMessage(object.nextMessage);
+            const sentMessage = await choosenChat.sendMessage(thisOnlineGame.nextMessage);
 
             await choosenChat.setMessagesAdminsOnly(false);
 
-            // TODO : also fix this history problem
-            // this.pushHistoryInfo(groupName, object.nextMessage);
+            this.pushHistoryInfo(groupName, thisOnlineGame.nextMessage);
 
             if (await this.waitTillEnd(new Date(new Date().getTime() + this.ONE_HOUR_MILISECONDS), groupName)) {
                 return;
@@ -55,23 +56,41 @@ export class CountryCityService {
 
             const relevantMessages = messages.slice(messages.findIndex((searchedMessages => searchedMessages.id.id === sentMessage.id.id)) + 1)
 
-            const uniqMessages = relevantMessages.filter((m) => m.type !== "revoked");
+            const allUsersInGroup = choosenChat.participants;
 
-            const allUsersInGroup = choosenChat.participants.filter((user) => !user.isAdmin);
-
-            const usersThatDidNotAnswer = allUsersInGroup.filter((id) => !uniqMessages.find(m => (m.author || m.from) === id.id._serialized))
-
-            const mappedIds = usersThatDidNotAnswer.map(user => user.id._serialized);
-
-            // TODO : change logic to add points and not to remove people
-            // shouldRemove.push(mappedIds);
-
-            console.log(mappedIds);
+            this.calculatePoints(relevantMessages, allUsersInGroup, groupName);
 
             randomTime = this.randomTimeTommorow()
         }
     }
 
+    calculatePoints(messages: Message[], users: GroupParticipant[], groupName: string) {
+        const currentGame = this.onlineGames.find(game => game.id === groupName);
+        let usersList = currentGame.users;
+
+        const withoutDeleted = messages.filter((m) => m.type !== "revoked");
+
+        const usersThatDidNotAnswer = users.filter((id) => !withoutDeleted.find(m => (m.author || m.from) === id.id._serialized))
+
+        const mappedUserIds = usersThatDidNotAnswer.map(user => user.id._serialized);
+
+        mappedUserIds.forEach((userId) => {
+            usersList = this.userHandlerService.changeUserPoints(userId, usersList, "no message :(", currentGame.round, -2, "no message was sent in the given time!")
+        })
+
+        this.setUsersList(groupName, usersList);
+    }
+
+    generateNextGame(groupName, randomTime) {
+        const letter = this.randomHebrewLetter();
+
+        const type = this.types[this.randomNumber(0, this.types.length)]
+
+        const message = `${type} שמתחיל באות ${letter}`;
+
+        this.setNextTimeInfo(groupName, randomTime);
+        this.setNextMessageInfo(groupName, message);
+    }
 
     async waitTillStart(time, groupName) {
         const timeToWait = Math.max(1, new Date(time).getTime() - new Date().getTime());
@@ -156,6 +175,33 @@ export class CountryCityService {
         // const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds() + 20)
 
         return this.randomDate(start, end);
+    }
+
+    setUsersList(groupName, users) {
+        const index = this.onlineGames.findIndex(group => group.id === groupName);
+        this.onlineGames[index].users = users;
+    }
+
+    setNextTimeInfo(groupName, action) {
+        const index = this.onlineGames.findIndex(group => group.id === groupName);
+        this.onlineGames[index].nextTime = action;
+    }
+
+    setNextMessageInfo(groupName, message) {
+        const index = this.onlineGames.findIndex(group => group.id === groupName);
+        this.onlineGames[index].nextMessage = message;
+    }
+
+    pushHistoryInfo(groupName, action) {
+        const parsedHistoryObject: GameHistory = {
+            time: `${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
+            message: action
+        };
+
+        const index = this.onlineGames.findIndex(group => group.id === groupName);
+        this.onlineGames[index].history ?
+            this.onlineGames[index].history.push(parsedHistoryObject) :
+            this.onlineGames[index].history = [parsedHistoryObject]
     }
 }
 

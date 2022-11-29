@@ -17,7 +17,7 @@ export class WhatsappBot implements IServer {
         return this.bot;
     }
 
-    public start(): void {
+    public start(app): void {
         this.bot.initialize();
 
         this.bot.on('qr', qr => {
@@ -27,11 +27,13 @@ export class WhatsappBot implements IServer {
         this.bot.on('ready', () => console.log('Client is ready!'));
 
         WhatsappBot.controllers.forEach((controller) => {
-            this.bot.on(controller.prefix, (...args) => controller.target.prototype.dispachAction(controller, ...args));
+            const targetClass = app.get(controller.target);
+
+            this.bot.on(controller.prefix, (...args) => targetClass.dispachAction(controller, ...args));
         });
     }
 
-    getChatWithTimeout(chat: string, timeout: number = 30000): Promise<any> {
+    async getChatWithTimeout(chat: string, timeout: number = 30000): Promise<any> {
         return new Promise((resolve, reject) => {
             setTimeout(reject, timeout)
             this.bot.getChatById(chat).then(resolve);

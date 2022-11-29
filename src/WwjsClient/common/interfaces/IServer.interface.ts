@@ -1,3 +1,5 @@
+import { INestApplication } from "@nestjs/common/interfaces";
+
 export interface IServer {
-    start: VoidFunction;
+    start: (app: INestApplication) => void;
 }

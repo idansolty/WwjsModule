@@ -54,8 +54,8 @@ export class BotController {
                     return message.id.fromMe;
                 }
                 case POSSIBLE_AUTHS.GROUP_ADMIN: {
-                    if (message.chatId) {
-                        const chat: GroupChat = await this.whatsappBot.getChatWithTimeout(message.chatId);
+                    if (message.author) {
+                        const chat: GroupChat = await this.whatsappBot.getChatWithTimeout(message.from);
                         const participant = chat.participants.find(user => user.id._serialized === message.id.participant)
 
                         return participant?.isAdmin;
