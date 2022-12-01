@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { WwjsLogger } from 'src/Logger/logger.service';
 import { Chat, GroupChat, GroupParticipant, Message, MessageTypes } from 'whatsapp-web.js';
 import { AgileConstOptions } from './common/consts';
+import { GameHandlerService } from './handlers/game.handler';
 import { UserHandlerService } from './handlers/users.handler';
 import { Game, GameHistory } from './types/game.type';
 
@@ -13,6 +14,7 @@ export class CountryCityService {
 
     constructor(
         private readonly userHandlerService: UserHandlerService,
+        private readonly gameHandlerService: GameHandlerService,
         private readonly Logger: WwjsLogger
     ) {
         this.onlineGames = [];
@@ -33,16 +35,19 @@ export class CountryCityService {
         while (true) {
             const thisOnlineGame = this.onlineGames.find(group => group.id === groupName);
 
+            this.Logger.logInfo(`${groupName} is waiting for time : ${thisOnlineGame.nextTime.toLocaleDateString()} ${thisOnlineGame.nextTime.toLocaleTimeString()}`);
             console.log(`waiting for time : ${thisOnlineGame.nextTime.toLocaleDateString()} ${thisOnlineGame.nextTime.toLocaleTimeString()}`)
             if (await this.waitTillStart(thisOnlineGame.nextTime, groupName)) {
                 return;
             }
 
+            this.onlineGames = this.gameHandlerService.startNextRound(thisOnlineGame, this.onlineGames);
+
+            this.Logger.logInfo(`${groupName} is starting round ${thisOnlineGame.round}`);
+
             const sentMessage = await choosenChat.sendMessage(thisOnlineGame.nextMessage);
 
             await choosenChat.setMessagesAdminsOnly(false);
-
-            this.pushHistoryInfo(groupName, thisOnlineGame.nextMessage);
 
             this.generateNextGame(groupName);
 
@@ -52,7 +57,6 @@ export class CountryCityService {
 
             await choosenChat.setMessagesAdminsOnly(true);
 
-            // check participants and remove failed
             const messages = await choosenChat.fetchMessages({ limit: 500 })
 
             const relevantMessages = messages.slice(messages.findIndex((searchedMessages => searchedMessages.id.id === sentMessage.id.id)) + 1)
@@ -112,6 +116,8 @@ export class CountryCityService {
     }
 
     generateNextGame(groupName) {
+        const relevantGame = this.onlineGames.find(group => group.id === groupName);
+
         const randomTime = this.randomTimeTommorow();
 
         const letter = this.randomHebrewLetter();
@@ -120,14 +126,14 @@ export class CountryCityService {
 
         const message = `${type} שמתחיל באות ${letter}`;
 
-        this.setNextTimeInfo(groupName, randomTime);
-        this.setNextMessageInfo(groupName, message);
+        this.onlineGames = this.gameHandlerService.setNextTimeInfo(randomTime, relevantGame, this.onlineGames);
+        this.onlineGames = this.gameHandlerService.setNextMessageInfo(message, relevantGame, this.onlineGames);
     }
 
     async waitTillStart(time, groupName) {
         const timeToWait = Math.max(1, new Date(time).getTime() - new Date().getTime());
 
-        const iteration = (timeToWait / (this.ONE_HOUR_MILISECONDS)) * 100 + 1;
+        const iteration = Math.floor((timeToWait / (this.ONE_HOUR_MILISECONDS)) * 100 + 1);
 
         const object = this.onlineGames.find(group => group.id === groupName);
 
@@ -151,7 +157,7 @@ export class CountryCityService {
     async waitTillEnd(time, groupName) {
         const timeToWait = Math.max(1, new Date(time).getTime() - new Date().getTime());
 
-        const iteration = (timeToWait / (this.ONE_HOUR_MILISECONDS)) * 100 + 1;
+        const iteration = Math.floor((timeToWait / (this.ONE_HOUR_MILISECONDS)) * 100 + 1);
 
         const object = this.onlineGames.find(group => group.id === groupName);
 
@@ -212,28 +218,6 @@ export class CountryCityService {
     setUsersList(groupName, users) {
         const index = this.onlineGames.findIndex(group => group.id === groupName);
         this.onlineGames[index].users = users;
-    }
-
-    setNextTimeInfo(groupName, action) {
-        const index = this.onlineGames.findIndex(group => group.id === groupName);
-        this.onlineGames[index].nextTime = action;
-    }
-
-    setNextMessageInfo(groupName, message) {
-        const index = this.onlineGames.findIndex(group => group.id === groupName);
-        this.onlineGames[index].nextMessage = message;
-    }
-
-    pushHistoryInfo(groupName, action) {
-        const parsedHistoryObject: GameHistory = {
-            time: `${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
-            message: action
-        };
-
-        const index = this.onlineGames.findIndex(group => group.id === groupName);
-        this.onlineGames[index].history ?
-            this.onlineGames[index].history.push(parsedHistoryObject) :
-            this.onlineGames[index].history = [parsedHistoryObject]
     }
 }
 

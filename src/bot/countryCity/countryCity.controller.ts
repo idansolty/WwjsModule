@@ -57,9 +57,20 @@ export class CountryCityController extends BotController {
 
                 this.countryCityService.countryCity(groupName, chatForGame);
             } catch (e) {
+                this.Logger.logError(`לא הצליח לשלוף צאטים :() \n ${JSON.stringify(e)}`);
                 message.reply(`לא הצליח לשלוף צאטים :() \n ${JSON.stringify(e)}`);
                 return;
             }
         }
+    }
+
+    @BotAuth(POSSIBLE_AUTHS.NOT_GROUP)
+    @BotCommand("!getUserInfo")
+    async getUserInfo(message: Message) {
+        const loggerChat = await message.getChat();
+
+        this.Logger.setChat(loggerChat);
+
+        this.Logger.logInfo("first log for logger chat");
     }
 }
