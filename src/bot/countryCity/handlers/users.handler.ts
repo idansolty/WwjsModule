@@ -26,10 +26,22 @@ export class UserHandlerService {
         return newList;
     }
 
-    public changeUserPoints(userId: string, list: User[], messageId: string, round: number, points: number, description?: string) {
+    public changeUserPoints(userId: string, list: User[], messageId: string, round: number, points: number, description?: string, extraInfo?: any) {
         const user: User = list.find(currentUser => currentUser.id === userId);
 
-        user.pointsLog.push(new PointsLog(messageId, round, points, description));
+        const logOnThatMessage = user.pointsLog.find((log) => log.messageId === messageId);
+
+        if (logOnThatMessage) {
+            // if the reason changed, change log
+            if (logOnThatMessage.reason !== description) {
+                user.pointsLog = user.pointsLog.filter((log) => log.messageId !== messageId);
+                user.points -= logOnThatMessage.points;
+            } else {
+                return list;
+            }
+        }
+
+        user.pointsLog.push(new PointsLog(messageId, round, points, description, extraInfo));
         user.points += points;
 
         return this.updateUserInList(user, list);

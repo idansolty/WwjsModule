@@ -8,6 +8,7 @@ import { BotController } from 'src/WwjsClient/common/interfaces/BotController';
 import { WhatsappBot } from 'src/WwjsClient/proxy/server';
 import { Chat, ChatTypes, Events, GroupChat, Message } from 'whatsapp-web.js';
 import { CountryCityService } from './countryCity.service';
+import { PointsCalculatorController } from './pointsCalculator.controller';
 
 
 @BotListner(Events.MESSAGE_CREATE)
@@ -17,6 +18,7 @@ export class CountryCityController extends BotController {
     constructor(
         private readonly Logger: WwjsLogger,
         private readonly countryCityService: CountryCityService,
+        private readonly pointsController: PointsCalculatorController,
         whatsappBot: WhatsappBot,
     ) {
         super(whatsappBot)
@@ -50,6 +52,9 @@ export class CountryCityController extends BotController {
 
                 this.Logger.logInfo(`מתחיל לשחק ארץ עיר בקבוצה: \n ${groupName}`);
                 message.reply(`מתחיל לשחק ארץ עיר בקבוצה: \n ${groupName}`);
+                
+                this.pointsController?.addToList(POSSIBLE_AUTHS.GENERIC_WHITELIST, chatForGame.id);
+
                 this.countryCityService.countryCity(groupName, chatForGame);
             } catch (e) {
                 message.reply(`לא הצליח לשלוף צאטים :() \n ${JSON.stringify(e)}`);

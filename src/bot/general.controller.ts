@@ -24,8 +24,10 @@ export class GeneralController extends BotController {
   }
 
   @BotAuth(POSSIBLE_AUTHS.FROM_ME)
+  @BotAuth(POSSIBLE_AUTHS.NOT_GROUP)
+  @BotAuth(POSSIBLE_AUTHS.GENERIC_BLACKLIST)
   @BotCommand("!debug")
-  debugFunction(message) {
+  async debugFunction(message) {
     console.log("debugging");
   }
 

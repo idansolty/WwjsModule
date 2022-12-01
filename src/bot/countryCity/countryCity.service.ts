@@ -32,7 +32,7 @@ export class CountryCityService {
         console.log("started countryCity!");
         while (true) {
             const thisOnlineGame = this.onlineGames.find(group => group.id === groupName);
-            
+
             console.log(`waiting for time : ${thisOnlineGame.nextTime.toLocaleDateString()} ${thisOnlineGame.nextTime.toLocaleTimeString()}`)
             if (await this.waitTillStart(thisOnlineGame.nextTime, groupName)) {
                 return;
@@ -59,11 +59,11 @@ export class CountryCityService {
 
             const allUsersInGroup = choosenChat.participants;
 
-            this.calculatePoints(relevantMessages, allUsersInGroup, groupName);
+            this.calculateRoundPoints(relevantMessages, allUsersInGroup, groupName);
         }
     }
 
-    calculatePoints(messages: Message[], users: GroupParticipant[], groupName: string) {
+    calculateRoundPoints(messages: Message[], users: GroupParticipant[], groupName: string) {
         const currentGame = this.onlineGames.find(game => game.id === groupName);
         let usersList = currentGame.users;
 
@@ -81,8 +81,34 @@ export class CountryCityService {
                 usersList = this.userHandlerService.changeUserPoints(userId, usersList, "no message :(", currentGame.round, -currentGame.options.POINTS_LOST_WHEN_NOT_ANSWERING, "no message was sent in the given time!")
             })
         }
-        
+
         this.setUsersList(groupName, usersList);
+    }
+
+    caculateBadAnswer(groupName, userId, messageId, reason?) {
+        const currentGame = this.onlineGames.find(game => game.id === groupName);
+
+        this.userHandlerService.changeUserPoints(
+            userId,
+            currentGame.users,
+            messageId,
+            currentGame.round,
+            -currentGame.options.POINTS_LOST_WHEN_BAD_ANSWER,
+            `${userId} has lost ${Math.abs(currentGame.options.POINTS_LOST_WHEN_BAD_ANSWER)} points because he answered a bad answer! ${reason ? `(${reason})` : ""}`
+        )
+    }
+
+    caculateGoodAnswer(groupName, userId, messageId, reason?) {
+        const currentGame = this.onlineGames.find(game => game.id === groupName);
+
+        this.userHandlerService.changeUserPoints(
+            userId,
+            currentGame.users,
+            messageId,
+            currentGame.round,
+            currentGame.options.POINTS_GAINED_WHEN_GOOD_ANSWER,
+            `${userId} has lost ${Math.abs(currentGame.options.POINTS_GAINED_WHEN_GOOD_ANSWER)} points because he answered a good answer! ${reason ? `(${reason})` : ""}`
+        )
     }
 
     generateNextGame(groupName) {

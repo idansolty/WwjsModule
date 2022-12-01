@@ -9,8 +9,13 @@ import { GeneralController } from './general.controller';
 import { ReactionController } from './reaction.controller';
 
 @Module({
-    imports: [LoggerModule.register({name: "Bot Module"})],
-    controllers: [GeneralController, CountryCityController],
-    providers: [WhatsappBot, CountryCityService, CountryCityController, UserHandlerService],
+    imports: [LoggerModule.register({ name: "Bot Module" })],
+    controllers: [GeneralController, CountryCityController, PointsCalculatorController],
+    providers: [
+        WhatsappBot,
+        CountryCityService,
+        UserHandlerService,
+        PointsCalculatorController
+    ],
 })
 export class BotModule { }
