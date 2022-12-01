@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { WhatsappBot } from 'src/WwjsClient/proxy/server';
 import { Chat } from 'whatsapp-web.js';
 
@@ -7,34 +7,31 @@ export class WwjsLogger {
     private logChat: Chat;
 
     constructor(
+        @Inject('CONFIG_OPTIONS') private options: Record<string, any>
     ) { }
 
     public setChat(chat: Chat) {
         this.logChat = chat;
     }
 
-    public async logInfo(message) {
+    public async costumeLog(message, type) {
         if (!this.logChat) {
             console.log("cannot write log no chat was defined");
             return;
         }
-        await this.logChat.sendMessage(`Info-Log: \n${message}`)
+        await this.logChat.sendMessage(`${this.options.name} ${type}: \n${message}`)
+    }
+
+    public async logInfo(message) {
+        await this.costumeLog(message, "Info-Log");
     }
 
     public async logWarn(message) {
-        if (this.logChat) {
-            console.log("cannot write log no chat was defined");
-            return;
-        }
-        await this.logChat.sendMessage(`Info-Warn: \n${message}`)
+        await this.costumeLog(message, "Info-Warn");
     }
 
     public async logError(message) {
-        if (this.logChat) {
-            console.log("cannot write log no chat was defined");
-            return;
-        }
-        await this.logChat.sendMessage(`Info-Error: \n${message}`)
+        await this.costumeLog(message, "Info-Error");
     }
 }
 

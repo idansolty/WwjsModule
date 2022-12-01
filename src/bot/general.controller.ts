@@ -6,6 +6,7 @@ import { BotListner } from 'src/WwjsClient/common/decorators/controller.decorato
 import { BotController } from 'src/WwjsClient/common/interfaces/BotController';
 import { WhatsappBot } from 'src/WwjsClient/proxy/server';
 import { Events } from 'whatsapp-web.js';
+import { User } from './countryCity/types/user.type';
 
 
 @BotListner(Events.MESSAGE_CREATE)

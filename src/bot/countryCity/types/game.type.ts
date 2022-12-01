@@ -1,5 +1,7 @@
 import { Document } from "mongoose";
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { User } from "./user.type";
+import { AgileConstOptions } from "../common/consts";
 
 export type WalletDocument = Game & Document;
 
@@ -22,6 +24,9 @@ export class Game {
 
     @Prop()
     users?: User[]
+
+    @Prop()
+    options: AgileConstOptions 
 }
 
 export const WalletSchema = SchemaFactory.createForClass(Game);
@@ -34,33 +39,3 @@ export class GameHistory {
     message: string
 }
 
-export class User {
-    @Prop()
-    id: string;
-
-    @Prop()
-    pointsLog: PointLog[]
-
-    @Prop()
-    points: number;
-
-    @Prop()
-    sumCorrectAnswers: number;
-
-    @Prop()
-    sumWrongAnswers: number;
-}
-
-export class PointLog {
-    @Prop()
-    messageId: string;
-
-    @Prop()
-    round: number
-
-    @Prop()
-    reason?: string;
-
-    @Prop()
-    points: number;
-}

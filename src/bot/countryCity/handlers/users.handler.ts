@@ -1,6 +1,7 @@
 import { resolveNaptr } from "dns";
 import { GroupParticipant } from "whatsapp-web.js";
-import { User } from "../types/games.types";
+import { PointsLog } from "../types/points.type";
+import { User } from "../types/user.type";
 
 // contains functions that help construct the users array
 export class UserHandlerService {
@@ -11,37 +12,40 @@ export class UserHandlerService {
         return list;
     }
 
+    public createNonExistingUsers(toCheck: string[], existing: User[]) {
+        const existingIds = existing.map((user) => user.id);
+        const idsThatDontExist = toCheck.filter((userId) => existingIds.includes(userId));
+
+        if (!idsThatDontExist.length) {
+            return existing;
+        }
+
+        const newUsers = this.createUsersList(idsThatDontExist);
+
+        const newList = existing.concat(newUsers);
+        return newList;
+    }
+
     public changeUserPoints(userId: string, list: User[], messageId: string, round: number, points: number, description?: string) {
         const user: User = list.find(currentUser => currentUser.id === userId);
 
-        user.pointsLog.push(this.createPointLog(messageId, round, points, description));
+        user.pointsLog.push(new PointsLog(messageId, round, points, description));
         user.points += points;
 
         return this.updateUserInList(user, list);
     }
 
-    public createUsersList(rawUsersObjs: GroupParticipant[]): User[] {
-        const parsedUsersObjs = rawUsersObjs.map(this.createUser);
+    public createUsersList(usersIds: string[]): User[] {
+        const parsedUsersObjs = usersIds.map((id) => this.createUser(id));
 
         return parsedUsersObjs;
     }
 
-    public createUser(rawUserObj: GroupParticipant): User {
-        return {
-            id: rawUserObj.id._serialized,
-            pointsLog: [this.createPointLog("init points", 0, 35, "init default points")],
-            points: 35, // TODO: create default common const value
-            sumCorrectAnswers: 0,
-            sumWrongAnswers: 0
-        }
-    }
+    public createUser(id: string): User {
+        const firstPointsLog = new PointsLog("init points", 0, 35, "init default points");
 
-    public createPointLog(messageId: string, round: number, points: number, reason?: string) {
-        return {
-            messageId,
-            round,
-            reason,
-            points
-        };
+        const user = new User(id, [firstPointsLog], 35, 0, 0)
+
+        return user;
     }
 }

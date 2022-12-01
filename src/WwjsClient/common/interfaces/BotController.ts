@@ -39,8 +39,9 @@ export class BotController {
     }
 
     public async authify(functionName, auths, ...args): Promise<boolean> {
-        const message: any = args[0];
+        const message: any= args[0];
         const auth = auths.find(currentAuth => currentAuth.methodName === functionName.methodName);
+        const messageChat = await this.whatsappBot.getChatWithTimeout(message.msgId?.remote || message.from);
 
         if (auth) {
             switch (auth.authType) {
@@ -54,17 +55,17 @@ export class BotController {
                     return message.id.fromMe;
                 }
                 case POSSIBLE_AUTHS.GROUP_ADMIN: {
-                    if (message.author) {
-                        const chat: GroupChat = await this.whatsappBot.getChatWithTimeout(message.from);
-                        const participant = chat.participants.find(user => user.id._serialized === message.id.participant)
+                    
+                    if (messageChat.isGroup) {
+                        const participant = messageChat.participants.find(user => user.id._serialized === (message.author || message.senderId))
 
-                        return participant?.isAdmin;
+                        return participant?.isAdmin || message.fromMe;
                     }
 
                     return false;
                 }
                 case POSSIBLE_AUTHS.NOT_GROUP: {
-                    return !message.author;
+                    return !messageChat.isGroup;
                 }
             }
         }

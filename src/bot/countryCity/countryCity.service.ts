@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { WwjsLogger } from 'src/Logger/logger.service';
-import { Chat, GroupChat, GroupParticipant, Message } from 'whatsapp-web.js';
+import { Chat, GroupChat, GroupParticipant, Message, MessageTypes } from 'whatsapp-web.js';
+import { AgileConstOptions } from './common/consts';
 import { UserHandlerService } from './handlers/users.handler';
-import { Game, GameHistory } from './types/games.types';
+import { Game, GameHistory } from './types/game.type';
 
 @Injectable()
 export class CountryCityService {
@@ -22,28 +23,28 @@ export class CountryCityService {
     }
 
     public async countryCity(groupName: string, chat: GroupChat) {
-        this.onlineGames.push({ id: groupName, round: 0 });
+        this.onlineGames.push({ id: groupName, round: 0, options: new AgileConstOptions() });
 
         const choosenChat = chat;
 
-        let randomTime = this.randomTimeTommorow()
+        this.generateNextGame(groupName);
 
         console.log("started countryCity!");
         while (true) {
-            this.generateNextGame(groupName, randomTime);
-
-            console.log(`waiting for time : ${randomTime.toLocaleDateString()} ${randomTime.toLocaleTimeString()}`)
-            if (await this.waitTillStart(randomTime, groupName)) {
+            const thisOnlineGame = this.onlineGames.find(group => group.id === groupName);
+            
+            console.log(`waiting for time : ${thisOnlineGame.nextTime.toLocaleDateString()} ${thisOnlineGame.nextTime.toLocaleTimeString()}`)
+            if (await this.waitTillStart(thisOnlineGame.nextTime, groupName)) {
                 return;
             }
-
-            const thisOnlineGame = this.onlineGames.find(group => group.id === groupName);
 
             const sentMessage = await choosenChat.sendMessage(thisOnlineGame.nextMessage);
 
             await choosenChat.setMessagesAdminsOnly(false);
 
             this.pushHistoryInfo(groupName, thisOnlineGame.nextMessage);
+
+            this.generateNextGame(groupName);
 
             if (await this.waitTillEnd(new Date(new Date().getTime() + this.ONE_HOUR_MILISECONDS), groupName)) {
                 return;
@@ -59,8 +60,6 @@ export class CountryCityService {
             const allUsersInGroup = choosenChat.participants;
 
             this.calculatePoints(relevantMessages, allUsersInGroup, groupName);
-
-            randomTime = this.randomTimeTommorow()
         }
     }
 
@@ -68,20 +67,27 @@ export class CountryCityService {
         const currentGame = this.onlineGames.find(game => game.id === groupName);
         let usersList = currentGame.users;
 
-        const withoutDeleted = messages.filter((m) => m.type !== "revoked");
+        usersList = this.userHandlerService.createNonExistingUsers(users.map((user) => user.id._serialized), usersList);
+
+        const withoutDeleted = messages.filter((m) => m.type !== MessageTypes.REVOKED);
 
         const usersThatDidNotAnswer = users.filter((id) => !withoutDeleted.find(m => (m.author || m.from) === id.id._serialized))
 
         const mappedUserIds = usersThatDidNotAnswer.map(user => user.id._serialized);
 
-        mappedUserIds.forEach((userId) => {
-            usersList = this.userHandlerService.changeUserPoints(userId, usersList, "no message :(", currentGame.round, -2, "no message was sent in the given time!")
-        })
-
+        if (currentGame.options.POINTS_LOST_WHEN_NOT_ANSWERING) {
+            mappedUserIds.forEach((userId) => {
+                this.Logger.logInfo(`${userId} has lost ${Math.abs(currentGame.options.POINTS_LOST_WHEN_NOT_ANSWERING)} points because he did not answer at the given time!`)
+                usersList = this.userHandlerService.changeUserPoints(userId, usersList, "no message :(", currentGame.round, -currentGame.options.POINTS_LOST_WHEN_NOT_ANSWERING, "no message was sent in the given time!")
+            })
+        }
+        
         this.setUsersList(groupName, usersList);
     }
 
-    generateNextGame(groupName, randomTime) {
+    generateNextGame(groupName) {
+        const randomTime = this.randomTimeTommorow();
+
         const letter = this.randomHebrewLetter();
 
         const type = this.types[this.randomNumber(0, this.types.length)]
