@@ -10,7 +10,7 @@ import { ReactionController } from './reaction.controller';
 
 @Module({
     imports: [LoggerModule.register({name: "Bot Module"})],
-    controllers: [GeneralController, CountryCityController, PointsCalculatorController],
+    controllers: [GeneralController, CountryCityController],
     providers: [WhatsappBot, CountryCityService, CountryCityController, UserHandlerService],
 })
 export class BotModule { }

@@ -1,14 +1,23 @@
 import { WhatsappBot } from "src/WwjsClient/proxy/server";
 import { Chat, GroupChat, GroupNotification, Message, Reaction } from "whatsapp-web.js";
-import { POSSIBLE_AUTHS } from "../auths/auth.enum";
+import { AuthOperationType, dataForAuth, GenericControllerAuth, POSSIBLE_AUTHS } from "../auths/auth.enum";
 
 export class BotController {
-    private whiteList;
-    private blackList;
+    public Lists: Record<string, string[]>;
+    public blackList;
+    private argsForAuth;
+    public authsFunctions: GenericControllerAuth;
 
     constructor(
         public readonly whatsappBot: WhatsappBot
-    ) { }
+    ) {
+        this.authsFunctions = new GenericControllerAuth();
+        this.argsForAuth = {};
+        this.Lists = {
+            [POSSIBLE_AUTHS.GENERIC_BLACKLIST]: [],
+            [POSSIBLE_AUTHS.GENERIC_WHITELIST]: []
+        }
+    }
 
     public async dispachAction(controller, ...args) {
         const functions = Reflect.getMetadata('commands', controller.target)
@@ -39,37 +48,47 @@ export class BotController {
     }
 
     public async authify(functionName, auths, ...args): Promise<boolean> {
-        const message: any= args[0];
-        const auth = auths.find(currentAuth => currentAuth.methodName === functionName.methodName);
+        const message: any = args[0];
+        const relevantAuths = auths.filter(currentAuth => currentAuth.methodName === functionName.methodName);
         const messageChat = await this.whatsappBot.getChatWithTimeout(message.msgId?.remote || message.from);
 
-        if (auth) {
-            switch (auth.authType) {
-                case POSSIBLE_AUTHS.CHAT_WHITE_LIST: {
-                    return false; // TODO: implement
-                }
-                case POSSIBLE_AUTHS.CHAT_BLACK_LIST: {
-                    return false; // TODO: implement
-                }
-                case POSSIBLE_AUTHS.FROM_ME: {
-                    return message.id.fromMe;
-                }
-                case POSSIBLE_AUTHS.GROUP_ADMIN: {
-                    
-                    if (messageChat.isGroup) {
-                        const participant = messageChat.participants.find(user => user.id._serialized === (message.author || message.senderId))
+        const dataForOperation = {
+            message,
+            messageChat,
+            lists: this.Lists,
+            ...this.argsForAuth
+        };
 
-                        return participant?.isAdmin || message.fromMe;
-                    }
-
-                    return false;
-                }
-                case POSSIBLE_AUTHS.NOT_GROUP: {
-                    return !messageChat.isGroup;
-                }
+        const authResult = relevantAuths.every(
+            releventAuth => {
+                const authObject = this.authsFunctions.AUTHS.find((auth) => auth.authType === releventAuth.authType);
+                return !!authObject?.operation(dataForOperation);
             }
+        );
+
+        return authResult;
+    }
+
+    public addArgsForAuth(name: string, value: any) {
+        this.argsForAuth[name] = value;
+    }
+
+    private addAuthObjects(authType: string, operation: (options: dataForAuth) => boolean) {
+        const newAuthObject = new AuthOperationType(authType, operation);
+
+        this.authsFunctions.addAuth(newAuthObject)
+    }
+
+    public addToList(name: string, value) {
+        if (this.Lists[name]) {
+            this.Lists[name].push(value);
+            return true;
         }
 
-        return true;
+        return false;
+    }
+
+    public setList(name: string, value) {
+        this.Lists[name] = value;
     }
 }
