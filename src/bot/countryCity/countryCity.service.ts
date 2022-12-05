@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { WwjsLogger } from 'src/Logger/logger.service';
+import { WhatsappBot } from 'src/WwjsClient/proxy/server';
 import { Chat, GroupChat, GroupParticipant, Message, MessageTypes } from 'whatsapp-web.js';
 import { AgileConstOptions } from './common/consts';
 import { GameHandlerService } from './handlers/game.handler';
@@ -15,6 +16,7 @@ export class CountryCityService {
     constructor(
         private readonly userHandlerService: UserHandlerService,
         private readonly gameHandlerService: GameHandlerService,
+        private readonly whatsappClient: WhatsappBot,
         private readonly Logger: WwjsLogger
     ) {
         this.onlineGames = [];
@@ -89,27 +91,31 @@ export class CountryCityService {
         this.setUsersList(groupName, usersList);
     }
 
-    caculateBadAnswer(groupName, userId, messageId, reason?) {
+    calculateBadAnswer(groupName, userId, messageId, timeGraded, reason?) {
         const currentGame = this.onlineGames.find(game => game.id === groupName);
+
+        const roundHistory = currentGame.history.find((historyLog) => historyLog.roundStart < timeGraded && historyLog.roundEnd > timeGraded)
 
         this.userHandlerService.changeUserPoints(
             userId,
             currentGame.users,
             messageId,
-            currentGame.round,
+            roundHistory.round,
             -currentGame.options.POINTS_LOST_WHEN_BAD_ANSWER,
             `${userId} has lost ${Math.abs(currentGame.options.POINTS_LOST_WHEN_BAD_ANSWER)} points because he answered a bad answer! ${reason ? `(${reason})` : ""}`
         )
     }
 
-    caculateGoodAnswer(groupName, userId, messageId, reason?) {
+    calculateGoodAnswer(groupName, userId, messageId, timeGraded, reason?) {
         const currentGame = this.onlineGames.find(game => game.id === groupName);
+
+        const roundHistory = currentGame.history.find((historyLog) => historyLog.roundStart < timeGraded && historyLog.roundEnd > timeGraded)
 
         this.userHandlerService.changeUserPoints(
             userId,
             currentGame.users,
             messageId,
-            currentGame.round,
+            roundHistory.round,
             currentGame.options.POINTS_GAINED_WHEN_GOOD_ANSWER,
             `${userId} has lost ${Math.abs(currentGame.options.POINTS_GAINED_WHEN_GOOD_ANSWER)} points because he answered a good answer! ${reason ? `(${reason})` : ""}`
         )
@@ -130,7 +136,12 @@ export class CountryCityService {
         this.onlineGames = this.gameHandlerService.setNextMessageInfo(message, relevantGame, this.onlineGames);
     }
 
-    async waitTillStart(time, groupName) {
+    public setNextTimeInfo(randomTime : Date, groupName: string) {
+        const relevantGame = this.onlineGames.find(group => group.id === groupName);
+        this.gameHandlerService.setNextTimeInfo(randomTime, relevantGame, this.onlineGames)
+    }
+
+    async waitTillStart(time: Date, groupName) {
         const timeToWait = Math.max(1, new Date(time).getTime() - new Date().getTime());
 
         const iteration = Math.floor((timeToWait / (this.ONE_HOUR_MILISECONDS)) * 100 + 1);
@@ -183,7 +194,7 @@ export class CountryCityService {
         });
     }
 
-    randomDate(start, end) {
+    randomDate(start: Date, end: Date) : Date{
         return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
     }
 
@@ -201,7 +212,7 @@ export class CountryCityService {
         return parseInt(start + Math.random() * (end - start));
     }
 
-    randomTimeTommorow() {
+    randomTimeTommorow() : Date {
         const now = new Date();
 
         // TOMMOROW BETWEEN 7 TO 23->

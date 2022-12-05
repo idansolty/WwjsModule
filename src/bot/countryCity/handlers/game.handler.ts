@@ -39,8 +39,12 @@ export class GameHandlerService {
 
             game.history = this.updateLogInHistory(lastRound, game.history);
         }
-
-        game.history.push(currentRoundHistoryLog);
+        
+        if (game.history) {
+            game.history.push(currentRoundHistoryLog);
+        } else {
+            game.history = [currentRoundHistoryLog];
+        }
 
         return this.updateGameInList(game, list);
     }

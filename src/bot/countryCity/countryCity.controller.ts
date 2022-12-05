@@ -35,6 +35,17 @@ export class CountryCityController extends BotController {
     }
 
     @BotAuth(POSSIBLE_AUTHS.FROM_ME)
+    @BotCommand("!setNextTime")
+    async setNextTime(message: Message) {
+        const params = message.body.slice(13).split("\n");
+        const [groupName, time] = params;
+        const timeDate = new Date(time);
+
+        this.countryCityService.setNextTimeInfo(timeDate, groupName);
+        this.Logger.logInfo(`${groupName} - \n was changed and is now waiting for time : ${timeDate.toLocaleDateString()} ${timeDate.toLocaleTimeString()}`)
+    }
+
+    @BotAuth(POSSIBLE_AUTHS.FROM_ME)
     @BotCommand("!countryCity")
     async countryCity(message: Message) {
         let groupName = message.body.slice(13);
@@ -52,7 +63,7 @@ export class CountryCityController extends BotController {
 
                 this.Logger.logInfo(`מתחיל לשחק ארץ עיר בקבוצה: \n ${groupName}`);
                 message.reply(`מתחיל לשחק ארץ עיר בקבוצה: \n ${groupName}`);
-                
+
                 this.pointsController?.addToList(POSSIBLE_AUTHS.GENERIC_WHITELIST, chatForGame.id);
 
                 this.countryCityService.countryCity(groupName, chatForGame);

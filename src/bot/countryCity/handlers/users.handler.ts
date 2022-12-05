@@ -1,5 +1,3 @@
-import { resolveNaptr } from "dns";
-import { GroupParticipant } from "whatsapp-web.js";
 import { PointsLog } from "../types/points.type";
 import { User } from "../types/user.type";
 
