@@ -6,6 +6,7 @@ import { AgileConstOptions } from './common/consts';
 import { GameHandlerService } from './handlers/game.handler';
 import { UserHandlerService } from './handlers/users.handler';
 import { Game, GameHistory } from './types/game.type';
+import { User } from './types/user.type';
 
 @Injectable()
 export class CountryCityService {
@@ -22,11 +23,11 @@ export class CountryCityService {
         this.onlineGames = [];
     }
 
-    public getOnlineGames() {
+    public getOnlineGames(): Game[] {
         return this.onlineGames;
     }
 
-    public async countryCity(groupName: string, chat: GroupChat) {
+    public async countryCity(groupName: string, chat: GroupChat): Promise<void> {
         this.onlineGames.push({ id: groupName, round: 0, options: new AgileConstOptions() });
 
         const choosenChat = chat;
@@ -69,7 +70,7 @@ export class CountryCityService {
         }
     }
 
-    calculateRoundPoints(messages: Message[], users: GroupParticipant[], groupName: string) {
+    private calculateRoundPoints(messages: Message[], users: GroupParticipant[], groupName: string) {
         const currentGame = this.onlineGames.find(game => game.id === groupName);
         let usersList = currentGame.users;
 
@@ -91,7 +92,7 @@ export class CountryCityService {
         this.setUsersList(groupName, usersList);
     }
 
-    calculateBadAnswer(groupName, userId, messageId, timeGraded, reason?) {
+    public calculateBadAnswer(groupName: string, userId: string, messageId: string, timeGraded: Date, reason?): void {
         const currentGame = this.onlineGames.find(game => game.id === groupName);
 
         const roundHistory = currentGame.history.find((historyLog) => historyLog.roundStart < timeGraded && historyLog.roundEnd > timeGraded)
@@ -100,13 +101,13 @@ export class CountryCityService {
             userId,
             currentGame.users,
             messageId,
-            roundHistory.round,
+            roundHistory?.round,
             -currentGame.options.POINTS_LOST_WHEN_BAD_ANSWER,
             `${userId} has lost ${Math.abs(currentGame.options.POINTS_LOST_WHEN_BAD_ANSWER)} points because he answered a bad answer! ${reason ? `(${reason})` : ""}`
         )
     }
 
-    calculateGoodAnswer(groupName, userId, messageId, timeGraded, reason?) {
+    public calculateGoodAnswer(groupName: string, userId: string, messageId: string, timeGraded: Date, reason?): void {
         const currentGame = this.onlineGames.find(game => game.id === groupName);
 
         const roundHistory = currentGame.history.find((historyLog) => historyLog.roundStart < timeGraded && historyLog.roundEnd > timeGraded)
@@ -115,13 +116,13 @@ export class CountryCityService {
             userId,
             currentGame.users,
             messageId,
-            roundHistory.round,
+            roundHistory?.round,
             currentGame.options.POINTS_GAINED_WHEN_GOOD_ANSWER,
             `${userId} has lost ${Math.abs(currentGame.options.POINTS_GAINED_WHEN_GOOD_ANSWER)} points because he answered a good answer! ${reason ? `(${reason})` : ""}`
         )
     }
 
-    generateNextGame(groupName) {
+    public generateNextGame(groupName: string): void {
         const relevantGame = this.onlineGames.find(group => group.id === groupName);
 
         const randomTime = this.randomTimeTommorow();
@@ -136,12 +137,12 @@ export class CountryCityService {
         this.onlineGames = this.gameHandlerService.setNextMessageInfo(message, relevantGame, this.onlineGames);
     }
 
-    public setNextTimeInfo(randomTime : Date, groupName: string) {
+    public setNextTimeInfo(randomTime: Date, groupName: string): void {
         const relevantGame = this.onlineGames.find(group => group.id === groupName);
         this.gameHandlerService.setNextTimeInfo(randomTime, relevantGame, this.onlineGames)
     }
 
-    async waitTillStart(time: Date, groupName) {
+    private async waitTillStart(time: Date, groupName: string): Promise<boolean> {
         const timeToWait = Math.max(1, new Date(time).getTime() - new Date().getTime());
 
         const iteration = Math.floor((timeToWait / (this.ONE_HOUR_MILISECONDS)) * 100 + 1);
@@ -165,7 +166,7 @@ export class CountryCityService {
         }
     }
 
-    async waitTillEnd(time, groupName) {
+    private async waitTillEnd(time: Date, groupName: string): Promise<boolean> {
         const timeToWait = Math.max(1, new Date(time).getTime() - new Date().getTime());
 
         const iteration = Math.floor((timeToWait / (this.ONE_HOUR_MILISECONDS)) * 100 + 1);
@@ -181,24 +182,24 @@ export class CountryCityService {
         }
     }
 
-    unicodeToChar(text) {
+    private unicodeToChar(text: string): string {
         return text.replace(/\\u[\dA-F]{4}/gi,
             function (match) {
                 return String.fromCharCode(parseInt(match.replace(/\\u/g, ''), 16));
             });
     }
 
-    delay(time) {
+    private async delay(time: number): Promise<void> {
         return new Promise(function (resolve) {
             setTimeout(resolve, time);
         });
     }
 
-    randomDate(start: Date, end: Date) : Date{
+    private randomDate(start: Date, end: Date): Date {
         return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
     }
 
-    randomHebrewLetter() {
+    private randomHebrewLetter(): string {
         let number = this.randomNumber(1488, 1514);
 
         if ([1509, 1507, 1503, 1501, 1498].includes(number)) {
@@ -208,11 +209,11 @@ export class CountryCityService {
         return this.unicodeToChar(`\\u0${(number).toString(16).toUpperCase()}`);;
     }
 
-    randomNumber(start, end) {
-        return parseInt(start + Math.random() * (end - start));
+    private randomNumber(start: number, end: number): number {
+        return Math.floor(start + Math.random() * (end - start));
     }
 
-    randomTimeTommorow() : Date {
+    private randomTimeTommorow(): Date {
         const now = new Date();
 
         // TOMMOROW BETWEEN 7 TO 23->
@@ -226,7 +227,7 @@ export class CountryCityService {
         return this.randomDate(start, end);
     }
 
-    setUsersList(groupName, users) {
+    private setUsersList(groupName: string, users: User[]) {
         const index = this.onlineGames.findIndex(group => group.id === groupName);
         this.onlineGames[index].users = users;
     }
