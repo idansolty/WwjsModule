@@ -37,10 +37,10 @@ export class PointsCalculatorController extends BotController {
         const message = await this.getMessageFromChat(chat, reaction.msgId._serialized);
 
         if (!message) {
-            this.countryCityService.calculateBadAnswer(chat.name, reaction.senderId, reaction.msgId._serialized, message.timestamp, "bad answer");
+            this.countryCityService.calculateBadAnswer(chat.name, reaction.senderId, reaction.msgId._serialized, new Date(message.timestamp), "bad answer");
             this.logger.logWarn(`sry ${reaction.senderId} message was too old to be found :(`)
         } else {
-            this.countryCityService.calculateBadAnswer(chat.name, reaction.senderId, reaction.msgId._serialized, reaction.timestamp, "bad answer");
+            this.countryCityService.calculateBadAnswer(chat.name, reaction.senderId, reaction.msgId._serialized, new Date(reaction.timestamp), "bad answer");
         }
     }
 
@@ -53,12 +53,12 @@ export class PointsCalculatorController extends BotController {
         const message = await this.getMessageFromChat(chat, reaction.msgId._serialized);
 
         if (!message) {
-            this.countryCityService.calculateBadAnswer(chat.name, reaction.senderId, reaction.msgId._serialized, message.timestamp, "dup answer");
+            this.countryCityService.calculateBadAnswer(chat.name, reaction.senderId, reaction.msgId._serialized, new Date(message.timestamp), "dup answer");
             this.logger.logWarn(`sry ${reaction.senderId} message was too old to be found :(`)
         } else {
-            this.countryCityService.calculateBadAnswer(chat.name, reaction.senderId, reaction.msgId._serialized, reaction.timestamp, "dup answer");
+            this.countryCityService.calculateBadAnswer(chat.name, reaction.senderId, reaction.msgId._serialized, new Date(reaction.timestamp), "dup answer");
         }
-        
+
     }
 
     @BotAuth(POSSIBLE_AUTHS.GENERIC_WHITELIST)
@@ -70,16 +70,16 @@ export class PointsCalculatorController extends BotController {
         const message = await this.getMessageFromChat(chat, reaction.msgId._serialized);
 
         if (!message) {
-            this.countryCityService.calculateGoodAnswer(chat.name, reaction.senderId, reaction.msgId._serialized, message.timestamp, "good answer");
+            this.countryCityService.calculateGoodAnswer(chat.name, reaction.senderId, reaction.msgId._serialized, new Date(message.timestamp), "good answer");
             this.logger.logWarn(`sry ${reaction.senderId} message was too old to be found :(`)
         } else {
-            this.countryCityService.calculateBadAnswer(chat.name, reaction.senderId, reaction.msgId._serialized, reaction.timestamp, "good answer");
+            this.countryCityService.calculateBadAnswer(chat.name, reaction.senderId, reaction.msgId._serialized, new Date(reaction.timestamp), "good answer");
         }
     }
 
     // TODO : wait for the guys at wwjs to make this a function inside the client
-    async getMessageFromChat(chat:GroupChat, messageId: string) {
-        const messages = await chat.fetchMessages({limit: 500});
+    async getMessageFromChat(chat: GroupChat, messageId: string) {
+        const messages = await chat.fetchMessages({ limit: 500 });
 
         const messageFound = messages.find(msg => msg.id._serialized === messageId);
 
