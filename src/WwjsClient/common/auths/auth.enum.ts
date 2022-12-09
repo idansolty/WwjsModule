@@ -1,3 +1,7 @@
+/**
+ * CR:
+ * Remove unused imports
+ */
 import { Message } from "whatsapp-web.js";
 
 export enum POSSIBLE_AUTHS {
