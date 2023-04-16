@@ -8,8 +8,10 @@ export class WhatsappBot implements IServer {
     private bot: Client;
     static controllers: any[] = [];
     static authLists: any[] = [];
+    public creation_timestamp = Math.floor(Math.random() * 10000);
 
     constructor() {
+        console.log("in server constructor")
         this.bot = new Client({});
     }
 

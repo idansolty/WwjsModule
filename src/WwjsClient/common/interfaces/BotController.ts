@@ -9,7 +9,7 @@ export class BotController {
     public authsFunctions: GenericControllerAuth;
 
     constructor(
-        public readonly whatsappBot: WhatsappBot
+        public readonly _whatsappBot: WhatsappBot
     ) {
         this.authsFunctions = new GenericControllerAuth();
         this.argsForAuth = {};
@@ -49,7 +49,7 @@ export class BotController {
     public async authify(functionName, auths, ...args): Promise<boolean> {
         const message: any = args[0];
         const relevantAuths = auths.filter(currentAuth => currentAuth.methodName === functionName.methodName);
-        const messageChat = await this.whatsappBot.getChatWithTimeout(message.msgId?.remote || message.id.remote);
+        const messageChat = await this._whatsappBot.getChatWithTimeout(message.msgId?.remote || message.id.remote);
 
         const dataForOperation = {
             message,

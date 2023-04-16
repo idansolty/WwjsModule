@@ -1,23 +1,12 @@
 import { Module } from '@nestjs/common';
 import { LoggerModule } from 'src/Logger/logger.module';
 import { WhatsappBot } from 'src/WwjsClient/proxy/server';
-import { CountryCityController } from './countryCity/countryCity.controller';
-import { CountryCityService } from './countryCity/countryCity.service';
-import { GameHandlerService } from './countryCity/handlers/game.handler';
-import { UserHandlerService } from './countryCity/handlers/users.handler';
-import { PointsCalculatorController } from './countryCity/pointsCalculator.controller';
 import { GeneralController } from './general.controller';
-import { ReactionController } from './reaction.controller';
-
 @Module({
-    imports: [LoggerModule.register({ name: "Bot Module" })],
-    controllers: [GeneralController, CountryCityController, PointsCalculatorController],
+    imports: [],
+    controllers: [GeneralController],
     providers: [
-        WhatsappBot,
-        CountryCityService,
-        UserHandlerService,
-        GameHandlerService,
-        PointsCalculatorController
+        WhatsappBot
     ],
 })
 export class BotModule { }
